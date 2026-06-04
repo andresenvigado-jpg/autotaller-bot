@@ -229,7 +229,7 @@ tools = [
 ]
 
 llm = ChatGroq(
-    model="llama-3.1-8b-instant",
+    model="llama-3.3-70b-versatile",
     temperature=0,
     api_key=os.getenv("GROQ_API_KEY"),
 )
@@ -321,11 +321,24 @@ async def webhook(
     historial.append({"role": "user", "content": mensaje})
 
     try:
-        resultado = agente.invoke({"messages": historial})
-        respuesta = resultado["messages"][-1].content
-    except Exception as e:
+    resultado = agente.invoke({"messages": historial})
+    respuesta = resultado["messages"][-1].content
+except Exception as e:
+    error_str = str(e)
+    # Si es error de tool_use_failed, reintentamos simplificando el mensaje
+    if "tool_use_failed" in error_str:
+        try:
+            historial[-1] = {"role": "user", "content": f"Consulta en la base de datos: {mensaje}"}
+            resultado = agente.invoke({"messages": historial})
+            respuesta = resultado["messages"][-1].content
+        except Exception as e2:
+            respuesta = "Lo siento, ocurrió un error. Intenta de nuevo."
+            print(f"Error agente reintento: {e2}")
+    elif "429" in error_str:
+        respuesta = "El servicio está temporalmente ocupado. Intenta en unos minutos. 🙏"
+    else:
         respuesta = "Lo siento, ocurrió un error. Intenta de nuevo."
-        print(f"Error agente: {e}")
+    print(f"Error agente: {e}")
 
     historial.append({"role": "assistant", "content": respuesta})
 
