@@ -5,6 +5,7 @@
 ╚══════════════════════════════════════════════════════════════╝
 """
 
+import groq
 import os
 import requests
 import tempfile
@@ -37,50 +38,34 @@ historiales = {}
 # ──────────────────────────────────────────────────────────────────
 
 def transcribir_audio(media_url: str) -> str:
-    """
-    Descarga el audio desde Twilio y lo transcribe con Whisper.
-    
-    Parámetros:
-      media_url: URL del audio enviado por WhatsApp via Twilio
-    
-    Retorna:
-      Texto transcrito o mensaje de error
-    """
     try:
-        # Descargamos el audio usando las credenciales de Twilio
-        # (Twilio protege los archivos de media con autenticación)
         respuesta = requests.get(
             media_url,
             auth=(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN),
             timeout=30
         )
-
         if respuesta.status_code != 200:
             return ""
 
-        # Guardamos el audio en un archivo temporal
-        # tempfile crea un archivo que se borra automáticamente al cerrar
         with tempfile.NamedTemporaryFile(suffix=".ogg", delete=False) as archivo_temp:
             archivo_temp.write(respuesta.content)
             ruta_temp = archivo_temp.name
 
-        # Enviamos el audio a Whisper para transcripción
+        # Usar Groq Whisper en lugar de OpenAI
+        groq_client = groq.Groq(api_key=os.getenv("GROQ_API_KEY"))
         with open(ruta_temp, "rb") as archivo_audio:
-            transcripcion = openai_client.audio.transcriptions.create(
-                model="whisper-1",
+            transcripcion = groq_client.audio.transcriptions.create(
+                model="whisper-large-v3-turbo",
                 file=archivo_audio,
-                language="es"  # Español colombiano
+                language="es"
             )
 
-        # Limpiamos el archivo temporal
         os.unlink(ruta_temp)
-
         return transcripcion.text
 
     except Exception as e:
         print(f"Error transcribiendo audio: {e}")
         return ""
-
 
 # ──────────────────────────────────────────────────────────────────
 # FUNCIÓN AUXILIAR BD
