@@ -17,13 +17,13 @@ from sqlalchemy import create_engine, text
 from langchain_core.tools import tool
 from langchain_groq import ChatGroq
 from langgraph.prebuilt import create_react_agent
-from openai import OpenAI
+import groq
 
 load_dotenv()
 
 app         = FastAPI(title="AutoTaller WhatsApp Bot")
 engine      = create_engine(os.getenv("DATABASE_URL"), echo=False)
-openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
 
 # Credenciales de Twilio para descargar audios
 TWILIO_ACCOUNT_SID = os.getenv("TWILIO_ACCOUNT_SID")
